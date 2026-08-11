@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { BrandLogo } from '@/components/BrandLogo';
 import { DisclaimerCard } from '@/components/DisclaimerCard';
+import { deleteScanImage } from '@/services/imageStore';
 import { TAB_BAR_SPACE } from '@/components/TabBar';
 import { Card } from '@/components/ui/Card';
 import { ListRow } from '@/components/ui/ListRow';
@@ -66,6 +67,7 @@ export default function ProfileScreen() {
           text: 'Tout effacer',
           style: 'destructive',
           onPress: () => {
+            scans.forEach((s) => deleteScanImage(s.id));
             clearAll();
             haptics.warning();
           },

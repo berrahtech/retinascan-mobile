@@ -31,14 +31,19 @@ const escape = (value: string) =>
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-/** Lit l'image en base64 pour l'embarquer dans le PDF. */
+/**
+ * Lit l'image en base64 pour l'embarquer dans le PDF.
+ *
+ * On passe par l'API « legacy » d'expo-file-system : la nouvelle API restreint
+ * les chemins accessibles et refuse la lecture des fichiers temporaires.
+ */
 async function embedImage(uri: string): Promise<string | null> {
   try {
-    const FileSystem = await import('expo-file-system/legacy');
-    const base64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' });
+    const FS = await import('expo-file-system/legacy');
+    const base64 = await FS.readAsStringAsync(uri, { encoding: 'base64' });
     return `data:image/jpeg;base64,${base64}`;
   } catch {
-    // Le rapport reste exploitable sans la vignette.
+    // Le rapport reste exploitable sans la vignette (image absente ou illisible).
     return null;
   }
 }
@@ -186,14 +191,29 @@ export async function exportScanReport(
   profile: PatientProfile,
 ): Promise<boolean> {
   const imageData = await embedImage(scan.imageUri);
-  const { uri } = await Print.printToFileAsync({
+  // On demande le PDF en base64 : expo-print l'écrit sinon dans le cache
+  // partagé d'Expo Go (hors bac à sable), que ni le système de fichiers ni le
+  // partage ne peuvent lire. Avec le base64 en main, on réécrit le fichier
+  // nous-mêmes dans le répertoire « documents », exposé au partage.
+  const printed = await Print.printToFileAsync({
     html: buildHtml(scan, profile, imageData),
-    base64: false,
+    base64: true,
   });
 
   if (!(await Sharing.isAvailableAsync())) return false;
 
-  await Sharing.shareAsync(uri, {
+  const FS = await import('expo-file-system/legacy');
+  const date = new Date(scan.createdAt).toISOString().slice(0, 10);
+  let target = printed.uri;
+
+  if (printed.base64 && FS.documentDirectory) {
+    const dir = `${FS.documentDirectory}reports/`;
+    await FS.makeDirectoryAsync(dir, { intermediates: true }).catch(() => {});
+    target = `${dir}RetinaScan-${date}-${GRADES[scan.grade].code}.pdf`;
+    await FS.writeAsStringAsync(target, printed.base64, { encoding: 'base64' });
+  }
+
+  await Sharing.shareAsync(target, {
     mimeType: 'application/pdf',
     dialogTitle: 'Partager le rapport RetinaScan',
     UTI: 'com.adobe.pdf',

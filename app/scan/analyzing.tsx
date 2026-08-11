@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     height: PREVIEW,
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth * 2,
-    backgroundColor: '#0A0F1E',
+    backgroundColor: '#0E0A1F',
   },
   sweepWrap: { position: 'absolute', left: 0, right: 0, height: 3, alignItems: 'center' },
   sweepLine: { width: '100%', height: 3 },

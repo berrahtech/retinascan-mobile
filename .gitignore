@@ -28,3 +28,7 @@ Thumbs.db
 
 # Typescript
 expo-env.d.ts
+
+# IDE
+.idea/
+.vscode/

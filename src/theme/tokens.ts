@@ -11,16 +11,22 @@ import { Platform } from 'react-native';
  * ------------------------------------------------------------------ */
 
 const palette = {
-  blue100: '#DBEAFE',
-  blue300: '#93C5FD',
-  blue400: '#60A5FA',
-  blue500: '#3B82F6',
-  blue600: '#2563EB',
-  blue700: '#1D4ED8',
+  // Famille violette de la marque RetinaScan (reprise du logo).
+  violet200: '#E9D5FF',
+  violet300: '#D8B4FE',
+  violet400: '#C084FC',
+  violet500: '#A855F7',
+  violet600: '#9333EA',
+  violet700: '#7C3AED',
+  violet800: '#6D28D9',
+  violet900: '#5B21B6',
 
-  cyan300: '#67E8F9',
-  cyan400: '#22D3EE',
-  cyan500: '#06B6D4',
+  // Indigo profond du mot « Retina » du logo.
+  indigo700: '#4C1D95',
+  indigo900: '#2E1065',
+
+  // Lilas lumineux : reflets des vaisseaux de l'iris, halo de scan.
+  glow: '#C4B5FD',
 
   emerald400: '#34D399',
   emerald500: '#10B981',
@@ -31,21 +37,21 @@ const palette = {
   orange500: '#F97316',
   red400: '#F87171',
   red500: '#EF4444',
-  violet400: '#A78BFA',
 
-  ink950: '#04060E',
-  ink900: '#070B16',
-  ink850: '#0B1020',
-  ink800: '#101729',
-  ink700: '#1A2338',
-  ink600: '#26304A',
+  // Noir-aubergine : fonds sombres teintés de violet plutôt que de bleu.
+  ink950: '#070512',
+  ink900: '#0B0718',
+  ink850: '#120B24',
+  ink800: '#191033',
+  ink700: '#251A40',
+  ink600: '#342552',
 
   slate400: '#94A3B8',
   slate500: '#64748B',
 
   white: '#FFFFFF',
-  paper: '#F4F7FC',
-  paperAlt: '#EAF0F9',
+  paper: '#F7F4FC',
+  paperAlt: '#EFE9F9',
 };
 
 /** Les cinq stades de la classification internationale (ICDR). */
@@ -114,29 +120,29 @@ const dark: ThemeColors = {
   background: palette.ink900,
   backgroundElevated: palette.ink850,
   /** Dégradé de fond appliqué par `<Screen />`. */
-  backgroundGradient: [palette.ink900, '#080D1C', palette.ink950] as const,
+  backgroundGradient: [palette.ink900, '#0E0A1F', palette.ink950] as const,
 
   surface: 'rgba(255,255,255,0.045)',
   surfaceSolid: palette.ink800,
   surfaceStrong: palette.ink700,
   surfacePressed: 'rgba(255,255,255,0.09)',
 
-  border: 'rgba(255,255,255,0.09)',
-  borderStrong: 'rgba(255,255,255,0.16)',
+  border: 'rgba(196,181,253,0.12)',
+  borderStrong: 'rgba(196,181,253,0.22)',
 
-  text: '#F1F5F9',
-  textSecondary: '#A7B4CB',
-  textMuted: '#6C7A94',
+  text: '#F3F0FA',
+  textSecondary: '#B6ACD0',
+  textMuted: '#786C96',
   textInverted: palette.ink900,
 
-  primary: palette.blue500,
-  primaryHover: palette.blue400,
+  primary: palette.violet700,
+  primaryHover: palette.violet500,
   primaryText: palette.white,
-  primarySoft: 'rgba(59,130,246,0.16)',
-  primaryGradient: [palette.blue500, palette.blue700] as const,
+  primarySoft: 'rgba(124,58,237,0.18)',
+  primaryGradient: [palette.violet500, palette.violet800] as const,
 
-  accent: palette.cyan400,
-  accentSoft: 'rgba(34,211,238,0.14)',
+  accent: palette.violet400,
+  accentSoft: 'rgba(192,132,252,0.16)',
 
   success: palette.emerald400,
   successSoft: 'rgba(52,211,153,0.14)',
@@ -144,11 +150,11 @@ const dark: ThemeColors = {
   warningSoft: 'rgba(251,191,36,0.14)',
   danger: palette.red400,
   dangerSoft: 'rgba(248,113,113,0.14)',
-  info: palette.violet400,
+  info: palette.violet300,
 
-  scrim: 'rgba(4,6,14,0.72)',
+  scrim: 'rgba(7,5,18,0.74)',
   shimmer: 'rgba(255,255,255,0.07)',
-  tabBar: 'rgba(11,16,32,0.92)',
+  tabBar: 'rgba(18,11,36,0.92)',
 
   blurTint: 'dark' as const,
   statusBar: 'light' as const,
@@ -161,25 +167,25 @@ const light: ThemeColors = {
 
   surface: palette.white,
   surfaceSolid: palette.white,
-  surfaceStrong: '#E7EDF7',
-  surfacePressed: '#EDF2FA',
+  surfaceStrong: '#EDE7F8',
+  surfacePressed: '#F1EBFB',
 
-  border: 'rgba(15,23,42,0.09)',
-  borderStrong: 'rgba(15,23,42,0.16)',
+  border: 'rgba(76,29,149,0.10)',
+  borderStrong: 'rgba(76,29,149,0.18)',
 
-  text: '#0B1220',
-  textSecondary: '#475569',
-  textMuted: palette.slate500,
+  text: '#1A0F2E',
+  textSecondary: '#544B66',
+  textMuted: '#8479A0',
   textInverted: palette.white,
 
-  primary: palette.blue600,
-  primaryHover: palette.blue700,
+  primary: palette.violet700,
+  primaryHover: palette.violet800,
   primaryText: palette.white,
-  primarySoft: 'rgba(37,99,235,0.10)',
-  primaryGradient: [palette.blue500, palette.blue700] as const,
+  primarySoft: 'rgba(124,58,237,0.10)',
+  primaryGradient: [palette.violet500, palette.violet800] as const,
 
-  accent: palette.cyan500,
-  accentSoft: 'rgba(6,182,212,0.12)',
+  accent: palette.violet600,
+  accentSoft: 'rgba(147,51,234,0.12)',
 
   success: palette.emerald500,
   successSoft: 'rgba(16,185,129,0.12)',
@@ -187,10 +193,10 @@ const light: ThemeColors = {
   warningSoft: 'rgba(245,158,11,0.14)',
   danger: palette.red500,
   dangerSoft: 'rgba(239,68,68,0.12)',
-  info: '#7C3AED',
+  info: palette.violet700,
 
-  scrim: 'rgba(15,23,42,0.45)',
-  shimmer: 'rgba(15,23,42,0.05)',
+  scrim: 'rgba(23,16,46,0.45)',
+  shimmer: 'rgba(76,29,149,0.05)',
   tabBar: 'rgba(255,255,255,0.94)',
 
   blurTint: 'light' as const,

@@ -84,10 +84,10 @@ export function RetinaPulse({ size = 128, active = true }: RetinaPulseProps) {
         <Svg width={size * 0.62} height={size * 0.62} viewBox="0 0 100 100">
           <Defs>
             <RadialGradient id="iris" cx="42%" cy="38%" r="65%">
-              <Stop offset="0" stopColor="#7DF5E4" />
+              <Stop offset="0" stopColor="#E9D5FF" />
               <Stop offset="0.42" stopColor={theme.colors.accent} />
               <Stop offset="0.78" stopColor={theme.colors.primary} />
-              <Stop offset="1" stopColor="#4338CA" />
+              <Stop offset="1" stopColor="#4C1D95" />
             </RadialGradient>
           </Defs>
           <Circle cx="50" cy="50" r="48" fill="url(#iris)" />
@@ -101,14 +101,14 @@ export function RetinaPulse({ size = 128, active = true }: RetinaPulseProps) {
                   cx={50 + Math.cos(angle) * 33}
                   cy={50 + Math.sin(angle) * 33}
                   r={1.6}
-                  fill="#0B1226"
+                  fill="#1A0B2E"
                 />
               );
             })}
           </G>
-          <Circle cx="50" cy="50" r="19" fill="#04070F" />
+          <Circle cx="50" cy="50" r="19" fill="#0B0512" />
           <Circle cx="40" cy="38" r="7.5" fill="#FFFFFF" opacity={0.5} />
-          <Circle cx="60" cy="62" r="3.5" fill="#BFF6FF" opacity={0.35} />
+          <Circle cx="60" cy="62" r="3.5" fill="#E9D5FF" opacity={0.35} />
         </Svg>
       </Animated.View>
     </View>

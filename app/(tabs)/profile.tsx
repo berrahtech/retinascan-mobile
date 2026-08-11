@@ -261,7 +261,7 @@ export default function ProfileScreen() {
         <View style={styles.footer}>
           <Ionicons name="eye-outline" size={15} color={theme.colors.textMuted} />
           <Txt variant="micro" color="muted">
-            RetinaScan · dépistage rétinien assisté
+            RetinaScan · Voir au-delà, diagnostiquer avec précision
           </Txt>
         </View>
       </ScrollView>

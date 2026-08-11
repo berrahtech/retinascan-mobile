@@ -110,9 +110,14 @@ export default function OnboardingScreen() {
       <View style={[styles.topBar, { paddingHorizontal: theme.spacing.xl }]}>
         <View style={[styles.brand, { gap: theme.spacing.sm }]}>
           <Ionicons name="eye" size={18} color={theme.colors.accent} />
-          <Txt variant="caption" weight="800">
-            RetinaScan
-          </Txt>
+          <View>
+            <Txt variant="caption" weight="800">
+              RetinaScan
+            </Txt>
+            <Txt variant="micro" color="muted">
+              Voir au-delà, diagnostiquer avec précision
+            </Txt>
+          </View>
         </View>
         {!isLast && (
           <PressableScale onPress={finish} activeScale={0.94}>

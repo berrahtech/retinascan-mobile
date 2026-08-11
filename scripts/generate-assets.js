@@ -158,11 +158,81 @@ class Canvas {
  * ------------------------------------------------------------------ */
 
 const IRIS_STOPS = [
-  [0.0, '#7DF5E4'],
-  [0.35, '#22D3EE'],
-  [0.72, '#3B82F6'],
-  [1.0, '#4338CA'],
+  [0.0, '#E9D5FF'],
+  [0.35, '#C084FC'],
+  [0.72, '#9333EA'],
+  [1.0, '#5B21B6'],
 ];
+
+/** RNG déterministe (mulberry32) : mêmes vaisseaux à chaque génération. */
+function makeRng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/** Dépose un point doux (gaussien) sur le canvas, sans scanner toute l'image. */
+function stampDot(c, px, py, radius, rgb, alpha) {
+  const s = c.size;
+  const x0 = Math.max(0, Math.floor(px - radius));
+  const x1 = Math.min(s - 1, Math.ceil(px + radius));
+  const y0 = Math.max(0, Math.floor(py - radius));
+  const y1 = Math.min(s - 1, Math.ceil(py + radius));
+  const inv = 1 / (radius * radius);
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const d2 = (x + 0.5 - px) ** 2 + (y + 0.5 - py) ** 2;
+      // Falloff doux : les points voisins fusionnent en un filament continu.
+      const fall = Math.exp(-d2 * inv * 1.3);
+      if (fall > 0.01) c.blend(x, y, rgb, alpha * fall);
+    }
+  }
+}
+
+/**
+ * Vaisseaux rétiniens : arbres qui rayonnent depuis la pupille vers le bord de
+ * l'iris, comme sur le logo. Rendu par dépôt de points le long de chaque branche.
+ */
+function drawVessels(c, cx, cy, R, pupil) {
+  const s = c.size;
+  const rng = makeRng(0x5e71a);
+  const vessel = hex('#E9D5FF');
+
+  const grow = (angle, startR, endR, width, depth) => {
+    // Pas très serré : les points se chevauchent et forment un filament continu.
+    const steps = Math.round((endR - startR) / (s * 0.001));
+    let a = angle;
+    for (let i = 0; i < steps; i++) {
+      const t = i / steps;
+      const rr = startR + (endR - startR) * t;
+      // Ondulation douce + dérive aléatoire : trajet organique.
+      a += (rng() - 0.5) * 0.08 + Math.sin(rr * 0.05 + angle * 7) * 0.01;
+      const px = cx + Math.cos(a) * rr;
+      const py = cy + Math.sin(a) * rr;
+      const w = width * (1 - t * 0.7);
+      const fade = 1 - smoothstep(0.85, 1.0, rr / R);
+      stampDot(c, px, py, Math.max(s * 0.003, w), vessel, 0.24 * fade);
+
+      // Ramifications, plus rares en profondeur.
+      if (depth < 3 && rr > startR + (endR - startR) * 0.25 && rng() < 0.09) {
+        const branchEnd = rr + (endR - rr) * (0.55 + rng() * 0.4);
+        grow(a + (rng() < 0.5 ? -1 : 1) * (0.4 + rng() * 0.4), rr, branchEnd, w * 0.72, depth + 1);
+      }
+    }
+  };
+
+  // Douze troncs répartis autour de la pupille.
+  const trunks = 12;
+  for (let i = 0; i < trunks; i++) {
+    const angle = (i / trunks) * Math.PI * 2 + rng() * 0.35;
+    grow(angle, pupil * 1.02, R * (0.82 + rng() * 0.12), s * 0.0052, 0);
+  }
+}
 
 /**
  * @param {Canvas} c
@@ -179,7 +249,7 @@ function drawEye(c, scale) {
   c.paint((x, y) => {
     const d = Math.hypot(x - cx, y - cy) / R;
     const glow = Math.exp(-Math.pow(d * 1.15, 2.4));
-    return glow > 0.002 ? [hex('#1E9BD8'), glow * 0.5] : null;
+    return glow > 0.002 ? [hex('#7C3AED'), glow * 0.5] : null;
   });
 
   // Disque de l'iris : dégradé radial + fibres angulaires.
@@ -198,19 +268,23 @@ function drawEye(c, scale) {
     return [rgb, 1 - smoothstep(1.0 - px * 2, 1.0, t)];
   });
 
+  const pupil = R * 0.4;
+
+  // Vaisseaux rétiniens, posés sur le disque de l'iris.
+  drawVessels(c, cx, cy, R, pupil);
+
   // Anneau limbique sombre : donne de la profondeur au bord de l'iris.
   c.paint((x, y) => {
     const d = Math.hypot(x - cx, y - cy) / R;
     const edge = smoothstep(0.82, 1.0, d) * (1 - smoothstep(0.99, 1.02, d));
-    return edge > 0.002 ? [hex('#0A1030'), edge * 0.55] : null;
+    return edge > 0.002 ? [hex('#160A2E'), edge * 0.55] : null;
   });
 
   // Pupille.
-  const pupil = R * 0.4;
   c.paint((x, y) => {
     const d = Math.hypot(x - cx, y - cy);
     const a = 1 - smoothstep(pupil - s * 0.004, pupil + s * 0.004, d);
-    return a > 0.002 ? [hex('#04070F'), a] : null;
+    return a > 0.002 ? [hex('#0B0512'), a] : null;
   });
 
   // Reflet spéculaire (haut-gauche) : rend l'œil « vivant ».
@@ -226,7 +300,7 @@ function drawEye(c, scale) {
     const dx = (x - (cx + R * 0.3)) / (R * 0.16);
     const dy = (y - (cy + R * 0.34)) / (R * 0.13);
     const a = Math.exp(-(dx * dx + dy * dy) * 3);
-    return a > 0.004 ? [hex('#BFF6FF'), a * 0.3] : null;
+    return a > 0.004 ? [hex('#E9D5FF'), a * 0.3] : null;
   });
 
   // Anneau de scan segmenté autour de l'iris.
@@ -262,7 +336,7 @@ function drawEye(c, scale) {
     if (cover < 0.004) return null;
     // L'anneau s'éclaircit vers le haut : suggère un balayage lumineux.
     const sweep = 0.62 + 0.38 * clamp01((cy - dy * 0 - y + ringR) / (ringR * 2));
-    return [mix(hex('#22D3EE'), hex('#A5F3FC'), sweep * 0.6), band * cover * 0.95];
+    return [mix(hex('#A855F7'), hex('#D8B4FE'), sweep * 0.6), band * cover * 0.95];
   });
 
   // Deux graduations fines sur l'axe horizontal : signature « instrument optique ».
@@ -277,23 +351,23 @@ function drawEye(c, scale) {
     if (band < 0.004) return null;
     const deg = Math.abs((Math.atan2(dy, dx) * 180) / Math.PI);
     const nearAxis = 1 - smoothstep(1.2, 2.4, Math.min(deg, Math.abs(180 - deg)));
-    return nearAxis > 0.004 ? [hex('#67E8F9'), band * nearAxis * 0.8] : null;
+    return nearAxis > 0.004 ? [hex('#C084FC'), band * nearAxis * 0.8] : null;
   });
 }
 
 function drawBackground(c) {
   const s = c.size;
-  // Dégradé diagonal sombre.
+  // Dégradé diagonal sombre, teinté d'aubergine.
   c.paint((x, y) => {
     const t = clamp01((x / s) * 0.35 + (y / s) * 0.65);
-    return [gradientAt([[0, '#101B3D'], [0.55, '#0A1026'], [1, '#04060F']], t), 1];
+    return [gradientAt([[0, '#221046'], [0.55, '#130B29'], [1, '#070512']], t), 1];
   });
-  // Voile lumineux en haut à gauche.
+  // Voile lumineux violet en haut à gauche.
   c.paint((x, y) => {
     const dx = (x - s * 0.22) / (s * 0.62);
     const dy = (y - s * 0.16) / (s * 0.62);
     const a = Math.exp(-(dx * dx + dy * dy) * 1.6);
-    return a > 0.003 ? [hex('#2563EB'), a * 0.28] : null;
+    return a > 0.003 ? [hex('#7C3AED'), a * 0.3] : null;
   });
 }
 

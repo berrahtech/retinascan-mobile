@@ -566,7 +566,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth * 2,
   },
 
-  hero: { overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth * 2, backgroundColor: '#0A0F1E' },
+  hero: { overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth * 2, backgroundColor: '#0E0A1F' },
   heroTop: {
     position: 'absolute',
     top: 0,

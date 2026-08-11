@@ -1,0 +1,46 @@
+name: Déploiement du site vitrine (GitHub Pages)
+
+# Publie le contenu de `website/` sur GitHub Pages à chaque mise à jour du site.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "website/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+# Permissions minimales requises par le déploiement Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un seul déploiement à la fois ; on annule les runs en cours devenus obsolètes.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Récupération du dépôt
+        uses: actions/checkout@v4
+
+      # Active Pages si nécessaire (enablement) et prépare la configuration.
+      - name: Configuration de Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Empaquetage du dossier website/
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: website
+
+      - name: Déploiement
+        id: deployment
+        uses: actions/deploy-pages@v4

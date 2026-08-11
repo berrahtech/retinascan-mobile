@@ -1,0 +1,935 @@
+<title>RetinaScan — Dépistage rétinien assisté par IA</title>
+
+<style>
+  /* ------------------------------------------------------------------ *
+   * Jetons — thème sombre par défaut (identité de marque), thème clair
+   * fourni pour le sélecteur du lecteur.
+   * ------------------------------------------------------------------ */
+  :root {
+    --bg: #0B0718;
+    --bg-2: #0E0A1F;
+    --bg-3: #08050F;
+    --panel: rgba(255, 255, 255, 0.035);
+    --panel-2: rgba(255, 255, 255, 0.06);
+    --panel-solid: #141026;
+    --border: rgba(196, 181, 253, 0.14);
+    --border-strong: rgba(196, 181, 253, 0.30);
+
+    --text: #F4F1FB;
+    --muted: #B4A9D0;
+    --faint: #7C6F9C;
+
+    --primary: #7C3AED;
+    --primary-2: #9333EA;
+    --accent: #C084FC;
+    --glow: #E9D5FF;
+    --indigo: #4C1D95;
+
+    --grad: linear-gradient(135deg, #A855F7 0%, #6D28D9 100%);
+    --grad-text: linear-gradient(120deg, #E9D5FF 0%, #C084FC 45%, #7C3AED 100%);
+    --ring-shadow: 0 30px 80px -30px rgba(124, 58, 237, 0.55);
+    --card-shadow: 0 24px 60px -30px rgba(2, 2, 12, 0.9);
+
+    --s0: #10B981;
+    --s1: #84CC16;
+    --s2: #F59E0B;
+    --s3: #F97316;
+    --s4: #EF4444;
+
+    --maxw: 1160px;
+    --r: 18px;
+    --r-lg: 26px;
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+    --font: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, "Helvetica Neue", Arial, sans-serif;
+    color-scheme: dark;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #F7F4FC;
+      --bg-2: #FBFAFE;
+      --bg-3: #EFE9F9;
+      --panel: #FFFFFF;
+      --panel-2: #FFFFFF;
+      --panel-solid: #FFFFFF;
+      --border: rgba(76, 29, 149, 0.12);
+      --border-strong: rgba(76, 29, 149, 0.22);
+      --text: #1A0F2E;
+      --muted: #574B6E;
+      --faint: #8B7FA6;
+      --primary: #7C3AED;
+      --primary-2: #6D28D9;
+      --accent: #7C3AED;
+      --glow: #9333EA;
+      --card-shadow: 0 24px 60px -32px rgba(76, 29, 149, 0.28);
+      color-scheme: light;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0B0718; --bg-2: #0E0A1F; --bg-3: #08050F;
+    --panel: rgba(255, 255, 255, 0.035); --panel-2: rgba(255, 255, 255, 0.06);
+    --panel-solid: #141026; --border: rgba(196, 181, 253, 0.14);
+    --border-strong: rgba(196, 181, 253, 0.30);
+    --text: #F4F1FB; --muted: #B4A9D0; --faint: #7C6F9C;
+    --accent: #C084FC; --glow: #E9D5FF;
+    --card-shadow: 0 24px 60px -30px rgba(2, 2, 12, 0.9);
+    color-scheme: dark;
+  }
+  :root[data-theme="light"] {
+    --bg: #F7F4FC; --bg-2: #FBFAFE; --bg-3: #EFE9F9;
+    --panel: #FFFFFF; --panel-2: #FFFFFF; --panel-solid: #FFFFFF;
+    --border: rgba(76, 29, 149, 0.12); --border-strong: rgba(76, 29, 149, 0.22);
+    --text: #1A0F2E; --muted: #574B6E; --faint: #8B7FA6;
+    --accent: #7C3AED; --glow: #9333EA;
+    --card-shadow: 0 24px 60px -32px rgba(76, 29, 149, 0.28);
+    color-scheme: light;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* Voile de fond ambiant */
+  .aura {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(60% 45% at 78% 8%, rgba(124, 58, 237, 0.28), transparent 60%),
+      radial-gradient(50% 40% at 12% 22%, rgba(192, 132, 252, 0.16), transparent 55%),
+      radial-gradient(45% 45% at 50% 100%, rgba(109, 40, 217, 0.16), transparent 60%);
+    animation: drift 22s var(--ease) infinite alternate;
+  }
+  @keyframes drift {
+    to { transform: translate3d(0, -18px, 0) scale(1.06); }
+  }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  a { color: inherit; text-decoration: none; }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; letter-spacing: -0.03em; line-height: 1.04; font-weight: 800; }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: 12.5px; font-weight: 700; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  .eyebrow::before {
+    content: ""; width: 22px; height: 1.5px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  .lead { color: var(--muted); font-size: 18px; max-width: 62ch; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* Wordmark ------------------------------------------------------- */
+  .wordmark { font-weight: 800; letter-spacing: -0.035em; }
+  .wordmark .scan { color: var(--primary); }
+
+  /* Boutons -------------------------------------------------------- */
+  .btn {
+    --_bg: var(--grad);
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 24px; border-radius: 999px; font-weight: 700; font-size: 15.5px;
+    border: 1px solid transparent; cursor: pointer; position: relative;
+    transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease), background 0.3s;
+    will-change: transform;
+  }
+  .btn svg { width: 18px; height: 18px; }
+  .btn-primary { background: var(--grad); color: #fff; box-shadow: var(--ring-shadow); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 24px 60px -22px rgba(124, 58, 237, 0.75); }
+  .btn-ghost { background: var(--panel-2); color: var(--text); border-color: var(--border-strong); }
+  .btn-ghost:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* Navigation ----------------------------------------------------- */
+  header.nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(16px) saturate(1.3);
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.4s, background 0.4s;
+  }
+  header.nav.scrolled { border-color: var(--border); }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .brand { display: flex; align-items: center; gap: 11px; font-size: 20px; }
+  .brand .mark { width: 34px; height: 34px; flex: none; }
+  .nav-links { display: flex; align-items: center; gap: 30px; }
+  .nav-links a { color: var(--muted); font-size: 15px; font-weight: 500; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta { display: flex; align-items: center; gap: 14px; }
+  .nav-links, .nav-ghost { display: none; }
+  @media (min-width: 900px) { .nav-links { display: flex; } .nav-ghost { display: inline-flex; } }
+
+  /* Hero ----------------------------------------------------------- */
+  .hero { position: relative; padding: 40px 0 30px; }
+  .hero-grid { display: grid; grid-template-columns: 1fr; gap: 30px; align-items: center; }
+  @media (min-width: 940px) {
+    .hero { padding: 70px 0 40px; }
+    .hero-grid { grid-template-columns: 1.05fr 0.95fr; gap: 20px; }
+  }
+  .hero h1 { font-size: clamp(2.5rem, 6.4vw, 4.55rem); margin-top: 22px; }
+  .hero h1 .grad {
+    background: var(--grad-text); -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+  .hero .lead { margin-top: 22px; font-size: 19px; }
+  .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 32px; }
+  .hero-meta { display: flex; flex-wrap: wrap; gap: 22px 34px; margin-top: 36px; }
+  .hero-meta .item { display: flex; flex-direction: column; gap: 2px; }
+  .hero-meta .n { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+  .hero-meta .l { font-size: 13px; color: var(--faint); }
+
+  /* Scanner (pièce maîtresse) -------------------------------------- */
+  .scanner-wrap { position: relative; display: grid; place-items: center; min-height: 420px; }
+  .scanner { width: min(92vw, 460px); aspect-ratio: 1; position: relative; }
+  .scanner svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .scanner .halo {
+    position: absolute; inset: 8%; border-radius: 50%;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.5), transparent 62%);
+    filter: blur(30px); animation: breathe 5s var(--ease) infinite alternate;
+  }
+  @keyframes breathe { to { transform: scale(1.08); opacity: 0.8; } }
+  .spin-slow { transform-origin: 200px 200px; animation: spin 26s linear infinite; }
+  .spin-rev { transform-origin: 200px 200px; animation: spin 40s linear infinite reverse; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .scanline { transform-origin: center; animation: sweep 4.2s var(--ease) infinite; }
+  @keyframes sweep {
+    0% { transform: translateY(-118px); opacity: 0; }
+    12% { opacity: 1; }
+    50% { transform: translateY(118px); opacity: 1; }
+    58% { opacity: 0; }
+    100% { transform: translateY(118px); opacity: 0; }
+  }
+  .lesion { opacity: 0; transform-box: fill-box; transform-origin: center; }
+  .lesion.on { animation: pop 4.2s var(--ease) infinite; }
+  @keyframes pop {
+    0%, 40% { opacity: 0; transform: scale(0.4); }
+    52% { opacity: 1; transform: scale(1.25); }
+    62% { opacity: 0.9; transform: scale(1); }
+    92% { opacity: 0.9; }
+    100% { opacity: 0; }
+  }
+  .float { animation: float 9s var(--ease) infinite alternate; }
+  @keyframes float { to { transform: translateY(-14px); } }
+
+  .scan-chip {
+    position: absolute; display: flex; align-items: center; gap: 8px;
+    padding: 9px 13px; border-radius: 13px; font-size: 13px; font-weight: 600;
+    background: color-mix(in srgb, var(--panel-solid) 82%, transparent);
+    border: 1px solid var(--border-strong); backdrop-filter: blur(8px);
+    box-shadow: var(--card-shadow); white-space: nowrap;
+  }
+  .scan-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .chip-a { top: 8%; right: -2%; }
+  .chip-b { bottom: 12%; left: -6%; }
+  @media (max-width: 520px) { .chip-a { right: 2%; } .chip-b { left: 0; } }
+
+  /* Bandeau confiance ---------------------------------------------- */
+  .trust {
+    margin-top: 34px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 26px;
+    padding: 18px 22px; border-radius: var(--r); border: 1px solid var(--border);
+    background: var(--panel); font-size: 14px; color: var(--muted);
+  }
+  .trust b { color: var(--text); font-weight: 700; }
+  .trust .sep { width: 1px; height: 20px; background: var(--border-strong); }
+
+  /* Sections génériques -------------------------------------------- */
+  section { position: relative; padding: 92px 0; }
+  .section-head { max-width: 640px; margin-bottom: 46px; }
+  .section-head h2 { font-size: clamp(2rem, 4.6vw, 3rem); margin-top: 16px; }
+  .section-head p { color: var(--muted); margin: 16px 0 0; font-size: 18px; }
+
+  /* Étapes --------------------------------------------------------- */
+  .steps { display: grid; gap: 20px; grid-template-columns: 1fr; counter-reset: step; }
+  @media (min-width: 760px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+  .step {
+    position: relative; padding: 30px 26px 28px; border-radius: var(--r-lg);
+    background: var(--panel); border: 1px solid var(--border); overflow: hidden;
+  }
+  .step::before {
+    counter-increment: step; content: "0" counter(step);
+    position: absolute; top: 18px; right: 22px; font-size: 44px; font-weight: 800;
+    letter-spacing: -0.04em; color: transparent; -webkit-text-stroke: 1px var(--border-strong);
+    opacity: 0.8;
+  }
+  .step .ico {
+    width: 54px; height: 54px; border-radius: 15px; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--primary) 16%, transparent);
+    border: 1px solid var(--border-strong); color: var(--accent); margin-bottom: 20px;
+  }
+  .step h3 { font-size: 20px; letter-spacing: -0.02em; }
+  .step p { color: var(--muted); margin: 10px 0 0; font-size: 15.5px; }
+  .step .link { display: inline-flex; }
+
+  /* Grille de fonctionnalités -------------------------------------- */
+  .features { display: grid; gap: 18px; grid-template-columns: 1fr; }
+  @media (min-width: 680px) { .features { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1000px) { .features { grid-template-columns: repeat(3, 1fr); } }
+  .feature {
+    padding: 26px 24px; border-radius: var(--r-lg); background: var(--panel);
+    border: 1px solid var(--border); transition: transform 0.4s var(--ease), border-color 0.4s, background 0.4s;
+  }
+  .feature:hover { transform: translateY(-5px); border-color: var(--border-strong); background: var(--panel-2); }
+  .feature .ico {
+    width: 46px; height: 46px; border-radius: 13px; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--primary) 15%, transparent); color: var(--accent);
+    border: 1px solid var(--border); margin-bottom: 18px;
+  }
+  .feature.big { grid-column: span 1; }
+  @media (min-width: 1000px) { .feature.big { grid-column: span 1; } }
+  .feature h3 { font-size: 18.5px; letter-spacing: -0.015em; }
+  .feature p { color: var(--muted); font-size: 15px; margin: 9px 0 0; }
+  .tag {
+    display: inline-block; margin-top: 14px; padding: 4px 11px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    background: color-mix(in srgb, var(--s0) 16%, transparent); color: var(--s0);
+    border: 1px solid color-mix(in srgb, var(--s0) 30%, transparent);
+  }
+
+  /* Échelle ICDR --------------------------------------------------- */
+  .grades-panel {
+    display: grid; grid-template-columns: 1fr; gap: 34px;
+    padding: 34px; border-radius: var(--r-lg); border: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  }
+  @media (min-width: 900px) { .grades-panel { grid-template-columns: 0.9fr 1.1fr; align-items: center; } }
+  .scale-bar { display: flex; gap: 6px; margin-bottom: 20px; }
+  .scale-bar span { height: 12px; flex: 1; border-radius: 999px; }
+  .grade-row {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 16px;
+    padding: 15px 0; border-top: 1px solid var(--border);
+  }
+  .grade-row:first-of-type { border-top: none; }
+  .grade-code {
+    width: 46px; height: 34px; border-radius: 10px; display: grid; place-items: center;
+    font-weight: 800; font-size: 14px;
+  }
+  .grade-row .name { font-weight: 600; font-size: 16px; }
+  .grade-row .meta { color: var(--faint); font-size: 13px; }
+  .grade-row .fu { font-size: 13px; color: var(--muted); text-align: right; white-space: nowrap; }
+
+  /* Aperçu appli (téléphone) --------------------------------------- */
+  .preview { display: grid; grid-template-columns: 1fr; gap: 40px; align-items: center; }
+  @media (min-width: 920px) { .preview { grid-template-columns: 1fr 1fr; } }
+  .phone {
+    width: 300px; max-width: 82vw; margin: 0 auto; aspect-ratio: 300 / 620;
+    border-radius: 42px; padding: 12px; position: relative;
+    background: linear-gradient(160deg, #241a3c, #0c0817);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 50px 90px -40px rgba(2, 2, 12, 0.95), inset 0 0 0 1px rgba(255,255,255,0.03);
+  }
+  .phone .screen {
+    position: absolute; inset: 12px; border-radius: 32px; overflow: hidden;
+    background: linear-gradient(180deg, #0B0718, #0E0A1F); padding: 16px 15px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .phone .notch {
+    position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+    width: 96px; height: 22px; border-radius: 999px; background: #05030c; z-index: 3;
+  }
+  .p-top { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .p-top .t { font-size: 12px; color: var(--faint); }
+  .p-title { font-size: 15px; font-weight: 700; }
+  .fundus {
+    position: relative; border-radius: 16px; aspect-ratio: 1; overflow: hidden;
+    background:
+      radial-gradient(circle at 42% 40%, #b06a2e, #7a3d12 55%, #3f1e07 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .fundus .disc {
+    position: absolute; width: 26%; aspect-ratio: 1; border-radius: 50%;
+    top: 34%; left: 56%; background: radial-gradient(circle, #f4d79a, #d99a3a);
+    box-shadow: 0 0 22px rgba(244, 215, 154, 0.5);
+  }
+  .fundus .hot {
+    position: absolute; border-radius: 50%; transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(251,191,36,0.85), rgba(251,191,36,0) 70%);
+    box-shadow: 0 0 0 1.5px rgba(251, 191, 36, 0.7);
+  }
+  .fundus .hot.red { background: radial-gradient(circle, rgba(248,113,113,0.9), rgba(248,113,113,0) 70%); box-shadow: 0 0 0 1.5px rgba(248,113,113,0.75); }
+  .p-badge {
+    position: absolute; top: 10px; left: 10px; padding: 4px 9px; border-radius: 8px;
+    font-size: 11px; font-weight: 800; color: #fff; z-index: 2;
+  }
+  .p-card {
+    border-radius: 16px; padding: 14px; background: rgba(255,255,255,0.045);
+    border: 1px solid rgba(196,181,253,0.16);
+  }
+  .p-card .r-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .p-eyebrow { font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); }
+  .p-grade { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; margin-top: 3px; }
+  .ring { width: 52px; height: 52px; flex: none; }
+  .p-scale { display: flex; gap: 4px; margin-top: 12px; }
+  .p-scale span { height: 7px; flex: 1; border-radius: 999px; opacity: 0.4; }
+  .p-scale span.on { opacity: 1; }
+  .p-cta {
+    margin-top: auto; text-align: center; padding: 12px; border-radius: 14px;
+    font-size: 13px; font-weight: 700; color: #fff; background: var(--grad);
+  }
+
+  .preview-list { list-style: none; padding: 0; margin: 24px 0 0; display: grid; gap: 14px; }
+  .preview-list li { display: flex; gap: 13px; align-items: flex-start; color: var(--muted); font-size: 15.5px; }
+  .preview-list .ck {
+    width: 24px; height: 24px; border-radius: 8px; flex: none; display: grid; place-items: center;
+    background: color-mix(in srgb, var(--s0) 16%, transparent); color: var(--s0);
+    border: 1px solid color-mix(in srgb, var(--s0) 30%, transparent); margin-top: 1px;
+  }
+  .preview-list b { color: var(--text); font-weight: 600; }
+
+  /* CTA final ------------------------------------------------------ */
+  .cta-final {
+    position: relative; overflow: hidden; text-align: center;
+    padding: 66px 30px; border-radius: 32px; border: 1px solid var(--border-strong);
+    background:
+      radial-gradient(80% 120% at 50% 0%, rgba(124, 58, 237, 0.35), transparent 60%),
+      var(--panel-solid);
+  }
+  .cta-final h2 { font-size: clamp(2rem, 5vw, 3.2rem); }
+  .cta-final p { color: var(--muted); max-width: 52ch; margin: 16px auto 0; font-size: 18px; }
+  .cta-final .row { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; margin-top: 30px; }
+
+  .disclaimer {
+    display: flex; gap: 14px; align-items: flex-start; max-width: 760px; margin: 28px auto 0;
+    padding: 16px 20px; border-radius: 16px; background: var(--panel);
+    border: 1px solid var(--border); color: var(--faint); font-size: 13.5px; text-align: left;
+  }
+  .disclaimer svg { flex: none; margin-top: 2px; color: var(--muted); }
+
+  /* Pied ----------------------------------------------------------- */
+  footer { border-top: 1px solid var(--border); padding: 54px 0 40px; margin-top: 40px; }
+  .foot-grid { display: flex; flex-wrap: wrap; gap: 30px; justify-content: space-between; align-items: flex-start; }
+  .foot-brand { max-width: 320px; }
+  .foot-brand p { color: var(--faint); font-size: 14px; margin: 14px 0 0; }
+  .foot-cols { display: flex; flex-wrap: wrap; gap: 46px; }
+  .foot-col h4 { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--faint); margin: 0 0 14px; }
+  .foot-col a { display: block; color: var(--muted); font-size: 14.5px; margin-bottom: 10px; transition: color 0.2s; }
+  .foot-col a:hover { color: var(--text); }
+  .foot-bottom {
+    margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--border);
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between;
+    color: var(--faint); font-size: 13px;
+  }
+
+  /* Révélation au défilement --------------------------------------- */
+  .reveal { opacity: 0; transform: translateY(26px); transition: opacity 0.9s var(--ease), transform 0.9s var(--ease); }
+  .reveal.in { opacity: 1; transform: none; }
+  .reveal[data-d="1"] { transition-delay: 0.08s; }
+  .reveal[data-d="2"] { transition-delay: 0.16s; }
+  .reveal[data-d="3"] { transition-delay: 0.24s; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .reveal { opacity: 1; transform: none; }
+  }
+</style>
+
+<div class="aura"></div>
+
+<!-- ============================ NAV ============================ -->
+<header class="nav" id="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top" aria-label="RetinaScan, accueil">
+      <span class="mark" id="navMark" aria-hidden="true"></span>
+      <span class="wordmark">Retina<span class="scan">Scan</span></span>
+    </a>
+    <nav class="nav-links" aria-label="Principale">
+      <a href="#fonctionnement">Fonctionnement</a>
+      <a href="#fonctionnalites">Fonctionnalités</a>
+      <a href="#stades">Les stades</a>
+      <a href="#appli">L’application</a>
+    </nav>
+    <div class="nav-cta">
+      <a class="btn btn-ghost nav-ghost" href="#fonctionnement">Fonctionnement</a>
+      <a class="btn btn-primary" href="#appli">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+        Découvrir l’app
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- ============================ HERO ============================ -->
+<main id="top">
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Dépistage rétinien assisté par IA</span>
+      <h1>
+        Votre rétine parle.<br />
+        <span class="grad">RetinaScan la lit.</span>
+      </h1>
+      <p class="lead">
+        Une simple photo du fond d’œil, analysée en moins d’une minute. RetinaScan
+        détecte les premiers signes de rétinopathie diabétique — bien avant qu’ils
+        ne touchent votre vision.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#appli">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+          Découvrir l’application
+        </a>
+        <a class="btn btn-ghost" href="#fonctionnement">Comment ça marche</a>
+      </div>
+      <div class="hero-meta">
+        <div class="item"><span class="n tnum" data-count="60">60</span><span class="l">secondes par analyse</span></div>
+        <div class="item"><span class="n">5</span><span class="l">stades ICDR classés</span></div>
+        <div class="item"><span class="n">100 %</span><span class="l">sur votre appareil</span></div>
+      </div>
+    </div>
+
+    <div class="scanner-wrap reveal" data-d="1">
+      <div class="scanner float" id="scanner" aria-hidden="true">
+        <div class="halo"></div>
+        <!-- SVG rempli par JS -->
+      </div>
+      <div class="scan-chip chip-a"><span class="dot" style="background:var(--s2)"></span>Microanévrismes · 14</div>
+      <div class="scan-chip chip-b"><span class="dot" style="background:var(--primary)"></span>Confiance 88&nbsp;%</div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="trust reveal">
+      <span><b>Outil d’aide au dépistage</b> — ne remplace pas l’ophtalmologiste</span>
+      <span class="sep" aria-hidden="true"></span>
+      <span>Classification internationale <b>ICDR&nbsp;R0–R4</b></span>
+      <span class="sep" aria-hidden="true"></span>
+      <span>Rapport <b>PDF</b> partageable avec votre médecin</span>
+      <span class="sep" aria-hidden="true"></span>
+      <span>Aucune image envoyée <b>sans votre action</b></span>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= FONCTIONNEMENT ====================== -->
+<section id="fonctionnement">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Trois gestes</span>
+      <h2>Du cliché au rapport, en une minute</h2>
+      <p>Un parcours pensé pour être suivi sans formation : on cadre, l’IA analyse, vous recevez une lecture claire.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal" data-d="1">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
+        <h3>Photographiez le fond d’œil</h3>
+        <p>Un repère de visée guide le cadrage et vérifie la qualité de l’image en temps réel — netteté, éclairage, centrage.</p>
+      </div>
+      <div class="step reveal" data-d="2">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1M7.7 16.3l-2.1 2.1"/><circle cx="12" cy="12" r="3.2"/></svg></div>
+        <h3>L’IA analyse la rétine</h3>
+        <p>Le réseau vasculaire est segmenté, les lésions repérées et localisées, puis le stade est classé selon l’échelle ICDR.</p>
+      </div>
+      <div class="step reveal" data-d="3">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
+        <h3>Recevez un rapport clair</h3>
+        <p>Stade, signes détectés, conduite à tenir et délai de recontrôle — exportables en PDF pour votre ophtalmologiste.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= FONCTIONNALITÉS ===================== -->
+<section id="fonctionnalites">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Ce qu’il y a dedans</span>
+      <h2>Pensé comme un instrument, pas comme un gadget</h2>
+      <p>Chaque écran répond à une question précise du dépistage, avec la rigueur d’un outil clinique et la clarté d’une app grand public.</p>
+    </div>
+    <div class="features">
+      <div class="feature reveal" data-d="1">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 3v2m0 14v2m9-9h-2M5 12H3"/></svg></div>
+        <h3>Capture guidée</h3>
+        <p>Repère de visée, balayage lumineux et contrôle qualité instantané pour une image exploitable du premier coup.</p>
+      </div>
+      <div class="feature reveal" data-d="2">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/></svg></div>
+        <h3>Classification ICDR</h3>
+        <p>Cinq stades, de R0 à R4, avec une distribution de probabilité — le modèle montre son degré de certitude.</p>
+      </div>
+      <div class="feature reveal" data-d="3">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="13" cy="15" r="1.4"/></svg></div>
+        <h3>Carte d’activation</h3>
+        <p>Les lésions qui ont pesé dans la décision sont surlignées sur l’image — touchez un signe pour l’isoler.</p>
+      </div>
+      <div class="feature reveal" data-d="1">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8"/></svg></div>
+        <h3>Rapport PDF</h3>
+        <p>Un compte-rendu structuré — stade, conduite à tenir, image du fond d’œil — prêt à être partagé avec un praticien.</p>
+      </div>
+      <div class="feature reveal" data-d="2">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <h3>Historique &amp; suivi</h3>
+        <p>Chaque analyse est conservée pour suivre l’évolution de votre rétine et rappeler le prochain dépistage.</p>
+      </div>
+      <div class="feature reveal" data-d="3">
+        <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <h3>Privé par conception</h3>
+        <p>Vos images et vos rapports restent sur votre appareil. Rien n’est transmis sans une action explicite de votre part.</p>
+        <span class="tag">100 % local</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== STADES ========================== -->
+<section id="stades">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">L’échelle internationale</span>
+      <h2>Cinq stades, une lecture partagée avec votre médecin</h2>
+      <p>RetinaScan parle le langage de l’ophtalmologie : la classification ICDR, du fond d’œil sain à la forme proliférante.</p>
+    </div>
+    <div class="grades-panel reveal">
+      <div>
+        <div class="scale-bar" aria-hidden="true">
+          <span style="background:var(--s0)"></span>
+          <span style="background:var(--s1)"></span>
+          <span style="background:var(--s2)"></span>
+          <span style="background:var(--s3)"></span>
+          <span style="background:var(--s4)"></span>
+        </div>
+        <p class="lead" style="font-size:16px">
+          Chaque stade porte sa conduite à tenir et son délai de recontrôle. Plus la
+          détection est précoce, plus la rétine est protégeable — un bon contrôle
+          glycémique stabilise souvent les premiers stades.
+        </p>
+      </div>
+      <div>
+        <div class="grade-row">
+          <span class="grade-code" style="background:color-mix(in srgb,var(--s0) 20%,transparent);color:var(--s0)">R0</span>
+          <span><span class="name">Aucune rétinopathie</span><br /><span class="meta">Aspect vasculaire régulier</span></span>
+          <span class="fu">Contrôle 12 mois</span>
+        </div>
+        <div class="grade-row">
+          <span class="grade-code" style="background:color-mix(in srgb,var(--s1) 20%,transparent);color:var(--s1)">R1</span>
+          <span><span class="name">Non proliférante légère</span><br /><span class="meta">Microanévrismes isolés</span></span>
+          <span class="fu">Contrôle 12 mois</span>
+        </div>
+        <div class="grade-row">
+          <span class="grade-code" style="background:color-mix(in srgb,var(--s2) 22%,transparent);color:var(--s2)">R2</span>
+          <span><span class="name">Non proliférante modérée</span><br /><span class="meta">Hémorragies, exsudats</span></span>
+          <span class="fu">Contrôle 3–6 mois</span>
+        </div>
+        <div class="grade-row">
+          <span class="grade-code" style="background:color-mix(in srgb,var(--s3) 22%,transparent);color:var(--s3)">R3</span>
+          <span><span class="name">Non proliférante sévère</span><br /><span class="meta">Atteinte multi-quadrants</span></span>
+          <span class="fu">Avis &lt; 1 mois</span>
+        </div>
+        <div class="grade-row">
+          <span class="grade-code" style="background:color-mix(in srgb,var(--s4) 22%,transparent);color:var(--s4)">R4</span>
+          <span><span class="name">Proliférante</span><br /><span class="meta">Néovaisseaux — menace la vision</span></span>
+          <span class="fu">Prise en charge urgente</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ APPLI ========================== -->
+<section id="appli">
+  <div class="wrap">
+    <div class="preview">
+      <div class="reveal">
+        <div class="phone float" aria-hidden="true">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="p-top">
+              <span class="p-title">Rapport d’analyse</span>
+              <span class="t tnum">09:57</span>
+            </div>
+            <div class="fundus">
+              <span class="p-badge" style="background:var(--s2)">R2</span>
+              <span class="disc"></span>
+              <span class="hot" style="top:30%;left:35%;width:34%;height:34%"></span>
+              <span class="hot red" style="top:62%;left:48%;width:26%;height:26%"></span>
+              <span class="hot" style="top:52%;left:24%;width:22%;height:22%"></span>
+            </div>
+            <div class="p-card">
+              <div class="r-head">
+                <div>
+                  <div class="p-eyebrow">Résultat</div>
+                  <div class="p-grade" style="color:var(--s2)">Rétinopathie modérée</div>
+                </div>
+                <svg class="ring" viewBox="0 0 52 52" aria-hidden="true">
+                  <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="5"/>
+                  <circle cx="26" cy="26" r="22" fill="none" stroke="var(--s2)" stroke-width="5" stroke-linecap="round"
+                    stroke-dasharray="138" stroke-dashoffset="16" transform="rotate(-90 26 26)"/>
+                </svg>
+              </div>
+              <div class="p-scale" aria-hidden="true">
+                <span class="on" style="background:var(--s0)"></span>
+                <span class="on" style="background:var(--s1)"></span>
+                <span class="on" style="background:var(--s2)"></span>
+                <span style="background:var(--s3)"></span>
+                <span style="background:var(--s4)"></span>
+              </div>
+            </div>
+            <div class="p-cta">Exporter le rapport PDF</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal" data-d="1">
+        <span class="eyebrow">Dans votre poche</span>
+        <h2 style="font-size:clamp(1.9rem,4.4vw,2.7rem);margin-top:16px">Une lecture clinique, rendue lisible</h2>
+        <p class="lead" style="margin-top:16px">
+          Le résultat ne se contente pas d’un score : il montre <b style="color:var(--text)">où</b> et
+          <b style="color:var(--text)">pourquoi</b>, avec la même rigueur qu’un compte-rendu, dans une interface
+          que tout le monde comprend.
+        </p>
+        <ul class="preview-list">
+          <li><span class="ck"><svg viewBox="0 0 24 24" width="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>Stade et fiabilité</b> — un anneau de confiance et la distribution complète des cinq stades.</span></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" width="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>Signes détectés</b> — microanévrismes, hémorragies, exsudats, dénombrés et localisés.</span></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" width="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>Conduite à tenir</b> — délai de recontrôle et conseils adaptés au stade détecté.</span></li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" width="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span><span><b>Bibliothèque pédagogique</b> — rétinopathie, œdème maculaire, glaucome, DMLA, cataracte…</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========================= CTA FINAL ========================= -->
+<section id="commencer">
+  <div class="wrap">
+    <div class="cta-final reveal">
+      <span class="eyebrow" style="justify-content:center">Commencez aujourd’hui</span>
+      <h2 style="margin-top:16px">Dépistez votre rétine<br />avant les symptômes</h2>
+      <p>Le diabète laisse ses premières traces sur la rétine bien avant toute baisse de vision. Une minute aujourd’hui peut protéger votre vue demain.</p>
+      <div class="row">
+        <a class="btn btn-primary" href="#appli">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+          Découvrir l’application
+        </a>
+        <a class="btn btn-ghost" href="#fonctionnalites">Explorer les fonctionnalités</a>
+      </div>
+      <div class="disclaimer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>RetinaScan est un outil d’aide au dépistage. Il ne pose pas de diagnostic et ne remplace en aucun cas l’examen d’un ophtalmologiste. En cas de baisse de vision, de douleur oculaire ou de doute, consultez un professionnel de santé sans attendre.</span>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- =========================== FOOTER ========================== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="#top" aria-label="RetinaScan">
+          <span class="mark" id="footMark" aria-hidden="true"></span>
+          <span class="wordmark" style="font-size:19px">Retina<span class="scan">Scan</span></span>
+        </a>
+        <p>Voir au-delà, diagnostiquer avec précision. Le dépistage de la rétinopathie diabétique, à portée de main.</p>
+      </div>
+      <div class="foot-cols">
+        <div class="foot-col">
+          <h4>Produit</h4>
+          <a href="#fonctionnement">Fonctionnement</a>
+          <a href="#fonctionnalites">Fonctionnalités</a>
+          <a href="#stades">Les stades ICDR</a>
+          <a href="#appli">L’application</a>
+        </div>
+        <div class="foot-col">
+          <h4>Comprendre</h4>
+          <a href="#stades">Rétinopathie diabétique</a>
+          <a href="#stades">Œdème maculaire</a>
+          <a href="#stades">Glaucome &amp; DMLA</a>
+          <a href="#stades">Cataracte</a>
+        </div>
+        <div class="foot-col">
+          <h4>Confiance</h4>
+          <a href="#commencer">Portée médicale</a>
+          <a href="#fonctionnalites">Confidentialité</a>
+          <a href="#commencer">Nous contacter</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2026 RetinaScan — Outil d’aide au dépistage, non diagnostique.</span>
+      <span>Voir au-delà, diagnostiquer avec précision.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    "use strict";
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    /* ---- Marque « œil » en SVG (nav + pied) ---- */
+    function eyeMark(size) {
+      var uid = "g" + Math.random().toString(36).slice(2, 7);
+      return (
+        '<svg viewBox="0 0 120 88" width="' + size + '" height="' + (size * 88 / 120) +
+        '" xmlns="http://www.w3.org/2000/svg" style="display:block">' +
+        '<defs><radialGradient id="' + uid + '" cx="42%" cy="38%" r="65%">' +
+        '<stop offset="0" stop-color="#E9D5FF"/><stop offset="0.42" stop-color="#C084FC"/>' +
+        '<stop offset="0.78" stop-color="#7C3AED"/><stop offset="1" stop-color="#4C1D95"/>' +
+        '</radialGradient></defs>' +
+        '<circle cx="60" cy="44" r="27" fill="url(#' + uid + ')"/>' +
+        '<circle cx="60" cy="44" r="10.5" fill="#0B0512"/>' +
+        '<circle cx="55.5" cy="39.5" r="3.2" fill="#fff" opacity="0.55"/>' +
+        '<path d="M84 30 A27 27 0 0 1 84 58" fill="none" stroke="#C084FC" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="2 5"/>' +
+        '<path d="M6 44 Q60 2 114 44 Q60 86 6 44 Z" fill="none" stroke="#7C3AED" stroke-width="5" stroke-linejoin="round"/>' +
+        '<path d="M92 44 h6 l3 -9 4 18 3 -9 h6" fill="none" stroke="#7C3AED" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' +
+        "</svg>"
+      );
+    }
+    var nm = document.getElementById("navMark");
+    var fm = document.getElementById("footMark");
+    if (nm) nm.innerHTML = eyeMark(34);
+    if (fm) fm.innerHTML = eyeMark(32);
+
+    /* ---- Scanner du héros ---- */
+    var host = document.getElementById("scanner");
+    if (host) {
+      var svgns = "http://www.w3.org/2000/svg";
+      var cx = 200, cy = 200;
+      var parts = [];
+      parts.push('<defs>');
+      parts.push('<radialGradient id="iris" cx="42%" cy="38%" r="62%"><stop offset="0" stop-color="#EBD9FF"/><stop offset="0.4" stop-color="#C084FC"/><stop offset="0.75" stop-color="#7C3AED"/><stop offset="1" stop-color="#3B1076"/></radialGradient>');
+      parts.push('<clipPath id="irisClip"><circle cx="200" cy="200" r="112"/></clipPath>');
+      parts.push('<linearGradient id="scan" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#C084FC" stop-opacity="0"/><stop offset="0.5" stop-color="#E9D5FF"/><stop offset="1" stop-color="#C084FC" stop-opacity="0"/></linearGradient>');
+      parts.push('</defs>');
+
+      // Grilles concentriques
+      [150, 172].forEach(function (r) {
+        parts.push('<circle cx="200" cy="200" r="' + r + '" fill="none" stroke="rgba(196,181,253,0.16)" stroke-width="1"/>');
+      });
+      // Anneaux de scan segmentés (rotation)
+      parts.push('<g class="spin-slow"><circle cx="200" cy="200" r="162" fill="none" stroke="#A855F7" stroke-width="2" stroke-dasharray="4 14" opacity="0.7"/></g>');
+      parts.push('<g class="spin-rev"><circle cx="200" cy="200" r="140" fill="none" stroke="#C084FC" stroke-width="1.5" stroke-dasharray="2 10" opacity="0.5"/></g>');
+      // Points cardinaux
+      [[200, 30], [200, 370], [30, 200], [370, 200]].forEach(function (p) {
+        parts.push('<circle cx="' + p[0] + '" cy="' + p[1] + '" r="3" fill="#C084FC"/>');
+      });
+
+      // Iris + vaisseaux (clippés)
+      parts.push('<g clip-path="url(#irisClip)">');
+      parts.push('<circle cx="200" cy="200" r="112" fill="url(#iris)"/>');
+      // Vaisseaux ramifiés
+      var seed = 7;
+      function rnd() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+      var vessels = "";
+      for (var i = 0; i < 12; i++) {
+        var a = (i / 12) * Math.PI * 2 + 0.3;
+        var inner = 32, outer = 104 + rnd() * 6;
+        var x0 = cx + Math.cos(a) * inner, y0 = cy + Math.sin(a) * inner;
+        var x1 = cx + Math.cos(a) * outer, y1 = cy + Math.sin(a) * outer;
+        var mid = (inner + outer) / 2, w = (i % 2 ? 1 : -1) * (8 + rnd() * 6);
+        var mx = cx + Math.cos(a) * mid - Math.sin(a) * w;
+        var my = cy + Math.sin(a) * mid + Math.cos(a) * w;
+        vessels += '<path d="M' + x0.toFixed(1) + ' ' + y0.toFixed(1) + ' Q' + mx.toFixed(1) + ' ' + my.toFixed(1) + ' ' + x1.toFixed(1) + ' ' + y1.toFixed(1) + '"/>';
+        if (i % 3 === 0) {
+          var ba = a + 0.45, br = outer - 18;
+          var bx = cx + Math.cos(ba) * br, by = cy + Math.sin(ba) * br;
+          vessels += '<path d="M' + mx.toFixed(1) + ' ' + my.toFixed(1) + ' Q' + ((mx + bx) / 2).toFixed(1) + ' ' + ((my + by) / 2).toFixed(1) + ' ' + bx.toFixed(1) + ' ' + by.toFixed(1) + '"/>';
+        }
+      }
+      parts.push('<g fill="none" stroke="#EBD9FF" stroke-width="1.3" stroke-linecap="round" opacity="0.7">' + vessels + "</g>");
+      // Pupille + reflets
+      parts.push('<circle cx="200" cy="200" r="42" fill="#0B0512"/>');
+      parts.push('<circle cx="184" cy="184" r="12" fill="#fff" opacity="0.5"/>');
+      parts.push('<circle cx="216" cy="216" r="6" fill="#E9D5FF" opacity="0.5"/>');
+      // Marqueurs de lésion révélés après le passage du scan
+      var lesions = [[150, 150], [252, 168], [168, 250], [238, 236], [200, 128]];
+      lesions.forEach(function (p, k) {
+        var col = k % 2 ? "#F87171" : "#FBBF24";
+        parts.push('<g class="lesion' + (reduce ? "" : " on") + '" style="animation-delay:' + (k * 0.12) + 's"><circle cx="' + p[0] + '" cy="' + p[1] + '" r="12" fill="' + col + '" opacity="0.18"/><circle cx="' + p[0] + '" cy="' + p[1] + '" r="6" fill="none" stroke="' + col + '" stroke-width="1.6"/></g>');
+      });
+      parts.push('</g>'); // fin clip
+
+      // Anneau limbique
+      parts.push('<circle cx="200" cy="200" r="112" fill="none" stroke="rgba(11,5,18,0.55)" stroke-width="5"/>');
+      parts.push('<circle cx="200" cy="200" r="113" fill="none" stroke="rgba(196,181,253,0.35)" stroke-width="1"/>');
+
+      // Ligne de balayage (clippée à l'iris)
+      if (!reduce) {
+        parts.push('<g clip-path="url(#irisClip)"><g class="scanline"><rect x="80" y="197" width="240" height="6" rx="3" fill="url(#scan)"/><rect x="80" y="199" width="240" height="1.4" fill="#fff" opacity="0.7"/></g></g>');
+      }
+
+      // Équerres d'angle
+      var br2 = 150;
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (s) {
+        var x = 200 + s[0] * br2, y = 200 + s[1] * br2;
+        parts.push('<path d="M' + (x - s[0] * 22) + ' ' + y + ' H' + x + ' V' + (y - s[1] * 22) + '" fill="none" stroke="#C084FC" stroke-width="2.5" stroke-linecap="round"/>');
+      });
+
+      host.insertAdjacentHTML("beforeend",
+        '<svg viewBox="0 0 400 400">' + parts.join("") + "</svg>");
+    }
+
+    /* ---- Révélation au défilement ---- */
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+      });
+    }, { threshold: 0.16, rootMargin: "0px 0px -8% 0px" });
+    document.querySelectorAll(".reveal").forEach(function (el) { io.observe(el); });
+
+    /* Filet de sécurité : révèle ce qui est déjà à l'écran si l'observer tarde
+       (onglet en arrière-plan, rendu différé) — le contenu n'est jamais bloqué. */
+    function revealVisible() {
+      document.querySelectorAll(".reveal:not(.in)").forEach(function (el) {
+        if (el.getBoundingClientRect().top < window.innerHeight * 1.15) el.classList.add("in");
+      });
+    }
+    window.addEventListener("load", function () { requestAnimationFrame(revealVisible); });
+    setTimeout(revealVisible, 700);
+    window.addEventListener("scroll", revealVisible, { passive: true, once: false });
+
+    /* ---- Compteurs ---- */
+    document.querySelectorAll("[data-count]").forEach(function (el) {
+      var target = parseInt(el.getAttribute("data-count"), 10);
+      var co = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          co.disconnect();
+          if (reduce) { el.textContent = target; return; }
+          var t0 = performance.now(), dur = 1100;
+          (function tick(t) {
+            var p = Math.min(1, (t - t0) / dur);
+            el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+            if (p < 1) requestAnimationFrame(tick);
+          })(t0);
+        });
+      }, { threshold: 1 });
+      co.observe(el);
+    });
+
+    /* ---- Bordure de nav au défilement ---- */
+    var nav = document.getElementById("nav");
+    var onScroll = function () { nav.classList.toggle("scrolled", window.scrollY > 12); };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    /* ---- Défilement doux ---- */
+    document.querySelectorAll('a[href^="#"]').forEach(function (a) {
+      a.addEventListener("click", function (e) {
+        var id = a.getAttribute("href");
+        if (id.length < 2) return;
+        var t = document.querySelector(id);
+        if (!t) return;
+        e.preventDefault();
+        t.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      });
+    });
+  })();
+</script>

@@ -12,7 +12,7 @@ import {
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { RetinaPulse } from '@/components/RetinaPulse';
+import { BrandLogo } from '@/components/BrandLogo';
 import { SeverityScale } from '@/components/SeverityScale';
 import { StepFlow } from '@/components/StepFlow';
 import { DISCLAIMER_TEXT } from '@/data/legal';
@@ -74,7 +74,7 @@ export default function OnboardingScreen() {
 
   /** Illustration propre à chaque diapositive. */
   const illustration = (key: string) => {
-    if (key === 'intro') return <RetinaPulse size={190} />;
+    if (key === 'intro') return <BrandLogo height={210} />;
     if (key === 'flow') {
       return (
         <View style={{ width: screenWidth - 96 }}>
@@ -108,16 +108,13 @@ export default function OnboardingScreen() {
   return (
     <Screen>
       <View style={[styles.topBar, { paddingHorizontal: theme.spacing.xl }]}>
-        <View style={[styles.brand, { gap: theme.spacing.sm }]}>
-          <Ionicons name="eye" size={18} color={theme.colors.accent} />
-          <View>
-            <Txt variant="caption" weight="800">
-              RetinaScan
+        <View style={styles.brand}>
+          <Txt variant="subheading" weight="800">
+            Retina
+            <Txt variant="subheading" weight="800" color="primary">
+              Scan
             </Txt>
-            <Txt variant="micro" color="muted">
-              Voir au-delà, diagnostiquer avec précision
-            </Txt>
-          </View>
+          </Txt>
         </View>
         {!isLast && (
           <PressableScale onPress={finish} activeScale={0.94}>

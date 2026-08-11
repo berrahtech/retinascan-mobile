@@ -1,10 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, TextInput, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { BrandLogo } from '@/components/BrandLogo';
 import { DisclaimerCard } from '@/components/DisclaimerCard';
 import { TAB_BAR_SPACE } from '@/components/TabBar';
 import { Card } from '@/components/ui/Card';
@@ -259,10 +259,7 @@ export default function ProfileScreen() {
         <DisclaimerCard />
 
         <View style={styles.footer}>
-          <Ionicons name="eye-outline" size={15} color={theme.colors.textMuted} />
-          <Txt variant="micro" color="muted">
-            RetinaScan · Voir au-delà, diagnostiquer avec précision
-          </Txt>
+          <BrandLogo height={132} />
         </View>
       </ScrollView>
     </Screen>
@@ -273,5 +270,5 @@ const styles = StyleSheet.create({
   identity: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   avatar: { width: 60, height: 60, alignItems: 'center', justifyContent: 'center' },
   divider: { height: StyleSheet.hairlineWidth * 2, marginLeft: 46 },
-  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  footer: { alignItems: 'center', justifyContent: 'center', paddingTop: 8 },
 });

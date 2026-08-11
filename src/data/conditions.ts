@@ -124,6 +124,34 @@ export const CONDITIONS: Condition[] = [
     screened: false,
   },
   {
+    slug: 'cataracte',
+    name: 'Cataracte',
+    tagline: "Opacification du cristallin qui trouble peu à peu la vision.",
+    icon: 'cloudy-outline',
+    tone: 'accent',
+    prevalence: 'Première cause de cécité réversible dans le monde',
+    description:
+      "Le cristallin est la lentille naturelle de l'œil. Avec l'âge, ses protéines s'agglomèrent et il perd sa transparence : la vision devient voilée, comme derrière un verre dépoli, avec un éblouissement accru et des couleurs ternies. La cataracte n'atteint pas la rétine, mais un cristallin opaque assombrit l'image du fond d'œil — c'est pourquoi une cataracte dense fait baisser le score de qualité de vos photos. Elle se traite par une chirurgie courte qui remplace le cristallin par un implant.",
+    signs: [
+      'Vision voilée ou brumeuse, non améliorée par les lunettes',
+      'Éblouissement et halos autour des lumières, surtout la nuit',
+      'Couleurs qui paraissent jaunies ou délavées',
+      'Fond d’œil difficile à photographier : image terne, faible contraste',
+    ],
+    risks: [
+      'Âge',
+      'Diabète',
+      'Exposition solaire (UV) prolongée',
+      'Tabagisme, corticoïdes au long cours',
+    ],
+    actions: [
+      'Examen ophtalmologique à la lampe à fente',
+      'Chirurgie de la cataracte quand la gêne devient significative',
+      'Protection solaire et contrôle du diabète en prévention',
+    ],
+    screened: false,
+  },
+  {
     slug: 'occlusion-veineuse',
     name: 'Occlusion veineuse rétinienne',
     tagline: "Un caillot bloque le drainage veineux de la rétine.",

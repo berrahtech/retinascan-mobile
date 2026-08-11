@@ -10,9 +10,9 @@
     "newArchEnabled": true,
     "backgroundColor": "#0B0718",
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/logg.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0B0718"
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": true,
@@ -54,10 +54,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "image": "./assets/images/logg.png",
+          "imageWidth": 240,
           "resizeMode": "contain",
-          "backgroundColor": "#0B0718"
+          "backgroundColor": "#FFFFFF"
         }
       ]
     ],

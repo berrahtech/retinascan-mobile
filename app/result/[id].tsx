@@ -20,6 +20,7 @@ import { Screen } from '@/components/ui/Screen';
 import { Txt } from '@/components/ui/Text';
 import { GRADES, URGENCY_LABEL } from '@/data/grades';
 import { getLesion } from '@/data/lesions';
+import { deleteScanImage } from '@/services/imageStore';
 import { exportScanReport } from '@/services/report';
 import { useScans } from '@/store/scans';
 import { useSettings } from '@/store/settings';
@@ -108,6 +109,7 @@ export default function ResultScreen() {
         style: 'destructive',
         onPress: () => {
           removeScan(scan.id);
+          deleteScanImage(scan.id);
           haptics.warning();
           router.back();
         },

@@ -21,6 +21,7 @@ import { ProgressRing } from '@/components/ui/ProgressRing';
 import { Screen } from '@/components/ui/Screen';
 import { Txt } from '@/components/ui/Text';
 import { ANALYSIS_STAGES, analyzeRetina, isAbortError } from '@/services/analysis';
+import { persistScanImage } from '@/services/imageStore';
 import { useScans } from '@/store/scans';
 import { useTheme } from '@/theme';
 import type { Eye } from '@/types';
@@ -74,9 +75,13 @@ export default function AnalyzingScreen() {
         setProgress(value);
       },
     })
-      .then((result) => {
+      .then(async (result) => {
         if (cancelled) return;
-        addScan(result);
+        // On met l'image à l'abri des purges de cache avant d'enregistrer le
+        // scan, pour que la vignette, l'aperçu et le PDF la conservent.
+        const imageUri = await persistScanImage(result.imageUri, result.id);
+        if (cancelled) return;
+        addScan({ ...result, imageUri });
         haptics.success();
         router.replace(`/result/${result.id}`);
       })
